@@ -1,0 +1,44 @@
+---
+- name: Instalación y despliegue de contenedor Docker (httpd)
+  hosts: all
+  become: true
+  tasks:
+
+    - name: Actualizar repositorios
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Instalar Docker
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+
+    - name: Verificar instalación de Docker
+      ansible.builtin.command:
+        cmd: docker --version
+      register: docker_version
+      changed_when: false
+
+    - name: Mostrar versión de Docker instalada
+      ansible.builtin.debug:
+        msg: "Versión instalada: {{ docker_version.stdout }}"
+
+    - name: Iniciar y habilitar el servicio Docker
+      ansible.builtin.service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Descargar imagen httpd (Apache)
+      community.docker.docker_image:
+        name: httpd
+        source: pull
+
+    - name: Lanzar contenedor httpd
+      community.docker.docker_container:
+        name: apache_web
+        image: httpd
+        state: started
+        ports:
+          - "80:80"
